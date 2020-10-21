@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Websocket</title>
+  <style>
+    html, body, #loading {
+      width: 100%;
+      height: 100%;
+    }
+
+    .tool-item, .config-item {
+      margin: 8px;
+    }
+
+    #loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #config .hidden, #loading.hidden {
+      display: none;
+    }
+    /* loading */
+    .MuiCircularProgress-root {
+      display: inline-block;
+    }
+    .MuiCircularProgress-static {
+      transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    }
+    .MuiCircularProgress-indeterminate {
+      animation: MuiCircularProgress-keyframes-circular-rotate 1.4s linear infinite;
+    }
+    .MuiCircularProgress-colorPrimary {
+      color: #2196f3;
+    }
+    .MuiCircularProgress-colorSecondary {
+      color: #f50057;
+    }
+    .MuiCircularProgress-svg {
+      display: block;
+    }
+    .MuiCircularProgress-circle {
+      stroke: currentColor;
+    }
+    .MuiCircularProgress-circleStatic {
+      transition: stroke-dashoffset 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    }
+    .MuiCircularProgress-circleIndeterminate {
+      animation: MuiCircularProgress-keyframes-circular-dash 1.4s ease-in-out infinite;
+      stroke-dasharray: 80px, 200px;
+      stroke-dashoffset: 0px;
+    }
+    @keyframes MuiCircularProgress-keyframes-circular-rotate {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes MuiCircularProgress-keyframes-circular-dash {
+      0% {
+        stroke-dasharray: 1px, 200px;
+        stroke-dashoffset: 0px;
+      }
+      50% {
+        stroke-dasharray: 100px, 200px;
+        stroke-dashoffset: -15px;
+      }
+      100% {
+        stroke-dasharray: 100px, 200px;
+        stroke-dashoffset: -125px;
+      }
+    }
+    .MuiCircularProgress-circleDisableShrink {
+      animation: none;
+    }
+
+    .item {
+      border-top: 1px solid #ddd;
+      display: flex;
+    }
+
+    .left, .right {
+      flex: 1;
+    }
+
+    .item pre, .item .time {
+      background-color: #eee;
+      padding: 8px;
+      margin: 0;
+    }
+
+    .item .high-light {
+      color: red;
+    }
+
+    table, th, td {
+      border: 1px solid #999;
+      border-collapse: collapse;
+    }
+    table {
+      width: 100%;
+    }
+    th {
+      background-color: #eee;
+    }
+    th, td {
+      padding: 5px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div id="tools">
+    <div class="tool-item">
+      <button type="button" id="clearMessages">Clear list</button>
+    </div>
+    <div class="tool-item">
+      <label for="devices">Choose a device:</label>
+
+      <select name="devices" id="devices">
+        <option value="">All</option>
+        <option value="00137a100000b341">3p-current-meter</option>
+        <option value="00137a100000cf22">binsensor-001</option>
+        <option value="00137a100000b4ac">waterleak-001</option>
+      </select>
+    </div>
+  </div>
+  <div id="config">
+    <div id="4A" class="hidden">
+      <h3>config down (4A):</h3>
+      <div class="config-item">
+        <label for="commond">Choose a CmdID:</label>
+  
+        <select name="commond" id="commond">
+          <option value="01">01 配置设备参数</option>
+          <option value="02">02 读取设备参数</option>
+        </select>
+      </div>
+      <input id="deviceType" type="text" value="4A" hidden>
+      <div id="config-param" class="config-item">
+        <p>
+          sample: MinTime=60, MaxTime=60, CurrentChange=100<br>
+          value range: 1 ~ 65535
+        </p>
+        <input id="minTimeInput" type="text" placeholder="MinTime s">
+        <input id="maxTimeInput" type="text" placeholder="MaxTime s">
+        <input id="currentChangeInput" type="text" placeholder="CurrentChange mA">
+      </div>
+      <div class="config-item">
+        <button type="button" id="downlinkBtn">Commond Downlink</button>
+      </div>
+    </div>
+    <div id="34" class="hidden">
+      <h3>config down (34):</h3>
+      <div class="config-item">
+        <label for="commond34">Choose a CmdID:</label>
+  
+        <select name="commond34" id="commond34">
+          <option value="01">01 配置设备参数</option>
+          <option value="02">02 读取设备参数</option>
+          <option value="03">03 设置 OnDistanceThreshold</option>
+          <option value="04">04 读取 OnDistanceThreshold</option>
+          <option value="05">05 设置 FillMaxDistance</option>
+          <option value="06">06 读取 FillMaxDistance</option>
+        </select>
+      </div>
+      <input id="deviceType34" type="text" value="34" hidden>
+      <div id="configparam34-01" class="config-item">
+        <!-- 01 34 003C 003C 01 01F4 0014 -->
+        <!--
+          MinTime=1min
+          MaxTime=1min
+          BatteryChange=0.1v
+          DistanceChange=500mm
+          TemperatureChange=2℃
+        -->
+        <p>
+          sample: MinTime=60, MaxTime=60, BatteryChange=1, DistanceChange=500, TemperatureChange=2<br>
+          BatteryChange range: 1 ~ 255<br>
+          Else range: 1 ~ 65535
+        </p>
+        <input id="minTimeInput34" type="text" placeholder="MinTime s">
+        <input id="maxTimeInput34" type="text" placeholder="MaxTime s">
+        <input id="batteryChangeInput34" type="text" placeholder="BatteryChange (0.1v)">
+        <input id="distanceChangeInput34" type="text" placeholder="DistanceChange mm">
+        <input id="temperatureChangeInput34" type="text" placeholder="TemperatureChange (0.1℃)" style="width: 200px;">
+      </div>
+      <div id="configparam34-03" class="config-item hidden">
+        <p>
+          sample: OnDistanceThreshold=500<br>
+          value range: 1 ~ 65535
+        </p>
+        <input id="onDistanceThresholdInput34" type="text" placeholder="OnDistanceThreshold mm" style="width: 200px;">
+      </div>
+      <div id="configparam34-05" class="config-item hidden">
+        <p>
+          sample: FillMaxDistance=5000<br>
+          value range: 1 ~ 65535
+        </p>
+        <input id="fillMaxDistanceInput34" type="text" placeholder="FillMaxDistance mm" style="width: 200px;">
+      </div>
+      <div class="config-item">
+        <button type="button" id="downlinkBtn34">Commond Downlink</button>
+      </div>
+    </div>
+    <div id="12" class="hidden">
+      <h3>config down (12):</h3>
+      <div class="config-item">
+        <label for="commond12">Choose a CmdID:</label>
+  
+        <select name="commond12" id="commond12">
+          <option value="01">01 配置设备参数</option>
+          <option value="02">02 读取设备参数</option>
+        </select>
+      </div>
+      <input id="deviceType12" type="text" value="12" hidden>
+      <div id="configparam12" class="config-item">
+        <p>
+          sample: MinTime=60, MaxTime=60, BatteryChange=1<br>
+          BatteryChange range: 1 ~ 255<br>
+          Else range: 1 ~ 65535
+        </p>
+        <input id="minTimeInput12" type="text" placeholder="MinTime s">
+        <input id="maxTimeInput12" type="text" placeholder="MaxTime s">
+        <input id="batteryChangeInput12" type="text" placeholder="BatteryChange (0.1v)">
+      </div>
+      <div class="config-item">
+        <button type="button" id="downlinkBtn12">Commond Downlink</button>
+      </div>
+    </div>
+  </div>
+  <div id="loading">
+    <div class="MuiCircularProgress-root jss770 MuiCircularProgress-colorPrimary MuiCircularProgress-indeterminate" role="progressbar" style="width: 40px; height: 40px;">
+      <svg class="MuiCircularProgress-svg" viewBox="22 22 44 44">
+        <circle class="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20.2" fill="none" stroke-width="3.6"></circle>
+      </svg>
+    </div>
+  </div>
+  <div id="app"></div>
+  <script src="main.js"></script>
+</body>
+</html>
